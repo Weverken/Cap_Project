@@ -11,9 +11,7 @@ st.write(
 st.divider()
 
 
-# --------------------------------------------------
 # Import method
-# --------------------------------------------------
 
 import_method = st.radio(
     "How would you like to add your recipe?",
@@ -26,9 +24,7 @@ import_method = st.radio(
 )
 
 
-# --------------------------------------------------
 # Image
-# --------------------------------------------------
 
 if import_method == "📷 Upload Image":
 
@@ -51,9 +47,7 @@ if import_method == "📷 Upload Image":
         )
 
 
-# --------------------------------------------------
 # Document
-# --------------------------------------------------
 
 elif import_method == "📄 Upload Document":
 
@@ -74,9 +68,7 @@ elif import_method == "📄 Upload Document":
         )
 
 
-# --------------------------------------------------
 # URL
-# --------------------------------------------------
 
 elif import_method == "🔗 Recipe URL":
 

@@ -1,9 +1,7 @@
 import streamlit as st
 
 
-# --------------------------------------------------
 # Page configuration
-# --------------------------------------------------
 
 st.set_page_config(
     page_title="CookMate",
@@ -13,9 +11,7 @@ st.set_page_config(
 )
 
 
-# --------------------------------------------------
 # Pages
-# --------------------------------------------------
 
 cooking_assistant = st.Page(
     "pages/cooking_assistant.py",
@@ -36,9 +32,7 @@ import_recipe = st.Page(
 )
 
 
-# --------------------------------------------------
 # Navigation
-# --------------------------------------------------
 
 pg = st.navigation(
     [
