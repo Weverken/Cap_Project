@@ -7,6 +7,7 @@ from src.database.recipes import (
     update_recipe,
     delete_recipe,
 )
+from src.database.cooking_sessions import start_cooking_session
 
 
 st.title("📚 My Recipes")
@@ -697,9 +698,25 @@ elif "selected_recipe_id" in st.session_state:
         # Actions
         # ------------------------------------------
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
+
+            if st.button(
+                "👨‍🍳 Start Cooking",
+                type="primary",
+                use_container_width=True,
+            ):
+
+                start_cooking_session(
+                    user_id=user_id,
+                    recipe_id=recipe["id"],
+                    servings=recipe["servings"],
+                )
+
+                st.switch_page("pages/cooking_assistant.py")
+
+        with col2:
 
             if st.button(
                 "✏️ Edit Recipe",
@@ -712,7 +729,7 @@ elif "selected_recipe_id" in st.session_state:
 
                 st.rerun()
 
-        with col2:
+        with col3:
 
             if st.button(
                 "🗑️ Delete Recipe",

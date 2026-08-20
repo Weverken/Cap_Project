@@ -11,7 +11,7 @@ This is the tool behind prompts like:
 """
 
 
-def find_recipes_by_ingredients(
+def find_by_ingredients(
     recipes: list,
     available_ingredients: list,
     min_match_ratio: float = 0.0,
