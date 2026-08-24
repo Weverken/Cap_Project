@@ -17,7 +17,7 @@ auto-generate the tool schema the model sees, so they double as
 the tool's user-facing description — keep them accurate.
 """
 
-from src.config import DEFAULT_USER_ID
+from src.agent.context import get_current_user_id
 from src.database.recipes import get_all_recipes, get_recipe, update_recipe
 from src.database.cooking_sessions import (
     get_active_session,
@@ -35,7 +35,7 @@ from src.tools.search_recipes import search_recipes as _search_recipes
 
 def _find_recipe_by_name(name: str) -> dict | None:
     """Case-insensitive lookup of a saved recipe by name."""
-    recipes = get_all_recipes(DEFAULT_USER_ID)
+    recipes = get_all_recipes(get_current_user_id())
     name_lower = name.strip().lower()
 
     for recipe in recipes:
@@ -108,7 +108,7 @@ def find_recipes_by_ingredients_tool(available_ingredients: list[str]) -> dict:
         available_ingredients: Ingredients the user currently has
             (e.g. ["chicken", "rice", "broccoli"]).
     """
-    recipes = get_all_recipes(DEFAULT_USER_ID)
+    recipes = get_all_recipes(get_current_user_id())
     return _find_by_ingredients(recipes, available_ingredients)
 
 
@@ -127,7 +127,7 @@ def search_recipes_tool(
             minutes) at or below this value. Omit to skip.
     """
     return _search_recipes(
-        user_id=DEFAULT_USER_ID,
+        user_id=get_current_user_id(),
         search_term=search_term,
         max_cook_time=max_cook_time,
     )
@@ -145,7 +145,7 @@ def get_current_cooking_session_tool() -> dict:
     sauce looks too thick"), so you know exactly what they mean
     without asking them to repeat themselves.
     """
-    session = get_active_session(DEFAULT_USER_ID)
+    session = get_active_session(get_current_user_id())
 
     if session is None:
         return {
@@ -192,7 +192,7 @@ def advance_cooking_step_tool(direction: str) -> dict:
     if direction not in ("next", "previous"):
         return {"success": False, "error": "direction must be 'next' or 'previous'."}
 
-    session = get_active_session(DEFAULT_USER_ID)
+    session = get_active_session(get_current_user_id())
 
     if session is None:
         return {"success": False, "error": "No recipe is currently being cooked."}
@@ -225,7 +225,7 @@ def log_cooking_substitution_tool(note: str) -> dict:
     Args:
         note: A short description of the substitution/change.
     """
-    session = get_active_session(DEFAULT_USER_ID)
+    session = get_active_session(get_current_user_id())
 
     if session is None:
         return {"success": False, "error": "No recipe is currently being cooked."}
@@ -262,7 +262,7 @@ def save_recipe_change_tool(
         new_unit: New unit, if it should change. Omit to keep the
             original ingredient's unit.
     """
-    session = get_active_session(DEFAULT_USER_ID)
+    session = get_active_session(get_current_user_id())
 
     if session is None:
         return {

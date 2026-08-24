@@ -1,6 +1,6 @@
 import json
 
-from src.database.connection import get_connection
+from src.database.connection import get_connection, execute
 
 
 def initialize_database():
@@ -10,10 +10,11 @@ def initialize_database():
 
     conn = get_connection()
 
-    conn.execute(
+    execute(
+        conn,
         """
         CREATE TABLE IF NOT EXISTS recipes (
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             name TEXT NOT NULL,
             description TEXT,
@@ -25,7 +26,7 @@ def initialize_database():
             tags TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        """
+        """,
     )
 
     conn.commit()
@@ -47,7 +48,7 @@ def create_recipe(
     Create a new recipe in the database.
 
     ingredients, instructions and tags are Python lists
-    and will be stored as JSON in SQLite.
+    and will be stored as JSON text.
     """
 
     conn = get_connection()
@@ -56,7 +57,8 @@ def create_recipe(
     instructions_json = json.dumps(instructions)
     tags_json = json.dumps(tags)
 
-    cursor = conn.execute(
+    cursor = execute(
+        conn,
         """
         INSERT INTO recipes (
             user_id,
@@ -69,7 +71,8 @@ def create_recipe(
             instructions,
             tags
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
         """,
         (
             user_id,
@@ -84,7 +87,7 @@ def create_recipe(
         ),
     )
 
-    recipe_id = cursor.lastrowid
+    recipe_id = cursor.fetchone()[0]
 
     conn.commit()
     conn.close()
@@ -99,11 +102,12 @@ def get_recipe(recipe_id):
 
     conn = get_connection()
 
-    cursor = conn.execute(
+    cursor = execute(
+        conn,
         """
         SELECT *
         FROM recipes
-        WHERE id = ?
+        WHERE id = %s
         """,
         (recipe_id,),
     )
@@ -137,11 +141,12 @@ def get_all_recipes(user_id):
 
     conn = get_connection()
 
-    cursor = conn.execute(
+    cursor = execute(
+        conn,
         """
         SELECT *
         FROM recipes
-        WHERE user_id = ?
+        WHERE user_id = %s
         ORDER BY created_at DESC
         """,
         (user_id,),
@@ -194,19 +199,20 @@ def update_recipe(
     instructions_json = json.dumps(instructions)
     tags_json = json.dumps(tags)
 
-    conn.execute(
+    execute(
+        conn,
         """
         UPDATE recipes
         SET
-            name = ?,
-            description = ?,
-            servings = ?,
-            prep_time = ?,
-            cook_time = ?,
-            ingredients = ?,
-            instructions = ?,
-            tags = ?
-        WHERE id = ?
+            name = %s,
+            description = %s,
+            servings = %s,
+            prep_time = %s,
+            cook_time = %s,
+            ingredients = %s,
+            instructions = %s,
+            tags = %s
+        WHERE id = %s
         """,
         (
             name,
@@ -232,10 +238,11 @@ def delete_recipe(recipe_id):
 
     conn = get_connection()
 
-    conn.execute(
+    execute(
+        conn,
         """
         DELETE FROM recipes
-        WHERE id = ?
+        WHERE id = %s
         """,
         (recipe_id,),
     )
@@ -260,16 +267,19 @@ def search_recipes(
     query = """
         SELECT *
         FROM recipes
-        WHERE user_id = ?
+        WHERE user_id = %s
     """
 
     params = [user_id]
 
     if search_term:
+        # ILIKE for case-insensitive matching, matching SQLite's
+        # default case-insensitive LIKE behavior for ASCII text —
+        # Postgres's plain LIKE is case-sensitive.
         query += """
             AND (
-                name LIKE ?
-                OR description LIKE ?
+                name ILIKE %s
+                OR description ILIKE %s
             )
         """
 
@@ -282,7 +292,7 @@ def search_recipes(
 
     if max_cook_time is not None:
         query += """
-            AND cook_time <= ?
+            AND cook_time <= %s
         """
 
         params.append(max_cook_time)
@@ -291,7 +301,7 @@ def search_recipes(
         ORDER BY created_at DESC
     """
 
-    cursor = conn.execute(query, params)
+    cursor = execute(conn, query, params)
 
     rows = cursor.fetchall()
 

@@ -14,7 +14,7 @@ st.title("📚 My Recipes")
 
 # Temporary user ID
 # Later this will come from the logged-in user
-user_id = 1
+user_id = st.session_state["user_id"]
 
 
 # ==================================================

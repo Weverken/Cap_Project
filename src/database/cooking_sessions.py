@@ -1,6 +1,6 @@
 import json
 
-from src.database.connection import get_connection
+from src.database.connection import get_connection, execute
 
 
 def initialize_cooking_sessions_table():
@@ -16,20 +16,21 @@ def initialize_cooking_sessions_table():
 
     conn = get_connection()
 
-    conn.execute(
+    execute(
+        conn,
         """
         CREATE TABLE IF NOT EXISTS cooking_sessions (
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             recipe_id INTEGER NOT NULL,
             servings INTEGER NOT NULL,
             current_step INTEGER NOT NULL DEFAULT 0,
             substitutions TEXT NOT NULL DEFAULT '[]',
-            is_active INTEGER NOT NULL DEFAULT 1,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
             started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        """
+        """,
     )
 
     conn.commit()
@@ -48,22 +49,26 @@ def start_cooking_session(user_id: int, recipe_id: int, servings: int) -> dict:
     conn = get_connection()
 
     # End any existing active session for this user.
-    conn.execute(
-        "UPDATE cooking_sessions SET is_active = 0 WHERE user_id = ? AND is_active = 1",
+    execute(
+        conn,
+        "UPDATE cooking_sessions SET is_active = FALSE WHERE user_id = %s AND is_active = TRUE",
         (user_id,),
     )
 
-    cursor = conn.execute(
+    cursor = execute(
+        conn,
         """
         INSERT INTO cooking_sessions
             (user_id, recipe_id, servings, current_step, substitutions, is_active)
-        VALUES (?, ?, ?, 0, '[]', 1)
+        VALUES (%s, %s, %s, 0, '[]', TRUE)
+        RETURNING id
         """,
         (user_id, recipe_id, servings),
     )
 
+    session_id = cursor.fetchone()[0]
+
     conn.commit()
-    session_id = cursor.lastrowid
     conn.close()
 
     return get_session_by_id(session_id)
@@ -77,17 +82,20 @@ def get_active_session(user_id: int) -> dict | None:
 
     conn = get_connection()
 
-    row = conn.execute(
+    cursor = execute(
+        conn,
         """
         SELECT id, user_id, recipe_id, servings, current_step,
                substitutions, is_active, started_at, updated_at
         FROM cooking_sessions
-        WHERE user_id = ? AND is_active = 1
+        WHERE user_id = %s AND is_active = TRUE
         ORDER BY started_at DESC
         LIMIT 1
         """,
         (user_id,),
-    ).fetchone()
+    )
+
+    row = cursor.fetchone()
 
     conn.close()
 
@@ -102,15 +110,18 @@ def get_session_by_id(session_id: int) -> dict | None:
 
     conn = get_connection()
 
-    row = conn.execute(
+    cursor = execute(
+        conn,
         """
         SELECT id, user_id, recipe_id, servings, current_step,
                substitutions, is_active, started_at, updated_at
         FROM cooking_sessions
-        WHERE id = ?
+        WHERE id = %s
         """,
         (session_id,),
-    ).fetchone()
+    )
+
+    row = cursor.fetchone()
 
     conn.close()
 
@@ -125,11 +136,12 @@ def update_session_step(session_id: int, current_step: int) -> None:
 
     conn = get_connection()
 
-    conn.execute(
+    execute(
+        conn,
         """
         UPDATE cooking_sessions
-        SET current_step = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
+        SET current_step = %s, updated_at = CURRENT_TIMESTAMP
+        WHERE id = %s
         """,
         (current_step, session_id),
     )
@@ -155,11 +167,12 @@ def add_session_substitution(session_id: int, note: str) -> None:
 
     conn = get_connection()
 
-    conn.execute(
+    execute(
+        conn,
         """
         UPDATE cooking_sessions
-        SET substitutions = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
+        SET substitutions = %s, updated_at = CURRENT_TIMESTAMP
+        WHERE id = %s
         """,
         (json.dumps(substitutions), session_id),
     )
@@ -173,8 +186,9 @@ def end_cooking_session(session_id: int) -> None:
 
     conn = get_connection()
 
-    conn.execute(
-        "UPDATE cooking_sessions SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    execute(
+        conn,
+        "UPDATE cooking_sessions SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
         (session_id,),
     )
 
@@ -183,7 +197,7 @@ def end_cooking_session(session_id: int) -> None:
 
 
 def _row_to_dict(row) -> dict:
-    """Convert a raw SQLite row into a dict, deserializing JSON fields."""
+    """Convert a raw Postgres row into a dict, deserializing JSON fields."""
 
     return {
         "id": row[0],

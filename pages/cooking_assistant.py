@@ -1,6 +1,5 @@
 import streamlit as st
 
-from src.config import DEFAULT_USER_ID
 from src.database.recipes import get_recipe
 from src.database.cooking_sessions import (
     get_active_session,
@@ -25,7 +24,7 @@ st.divider()
 
 st.subheader("Currently Cooking")
 
-active_session = get_active_session(DEFAULT_USER_ID)
+active_session = get_active_session(st.session_state["user_id"])
 
 if active_session is None:
     st.info(
