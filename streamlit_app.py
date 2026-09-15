@@ -25,6 +25,69 @@ st.set_page_config(
 )
 
 
+# Button styling
+# Streamlit's theme.toml only sets flat colors — this adds the
+# tactile press/lift interaction and warm-toned shadow that make
+# buttons feel like part of a kitchen app rather than a generic
+# SaaS dashboard.
+
+st.markdown(
+    """
+    <style>
+    [data-testid="stBaseButton-primary"],
+    [data-testid="stBaseButton-secondary"] {
+        border-radius: 10px;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    /* Primary: filled sienna, warm shadow, lifts on hover */
+    [data-testid="stBaseButton-primary"] {
+        border: none;
+        box-shadow: 0 2px 6px rgba(92, 58, 33, 0.35);
+    }
+    [data-testid="stBaseButton-primary"]:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(92, 58, 33, 0.45);
+    }
+    [data-testid="stBaseButton-primary"]:active {
+        transform: translateY(0px);
+        box-shadow: 0 1px 3px rgba(92, 58, 33, 0.35);
+    }
+
+    /* Secondary: outlined, warm on hover, same press feel */
+    [data-testid="stBaseButton-secondary"] {
+        border: 1.5px solid #A0522D;
+        box-shadow: 0 1px 3px rgba(92, 58, 33, 0.15);
+    }
+    [data-testid="stBaseButton-secondary"]:hover {
+        border-color: #8B4513;
+        background-color: rgba(160, 82, 45, 0.08);
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(92, 58, 33, 0.25);
+    }
+    [data-testid="stBaseButton-secondary"]:active {
+        transform: translateY(0px);
+        box-shadow: 0 1px 2px rgba(92, 58, 33, 0.2);
+    }
+    /* Sidebar navigation links */
+    [data-testid="stPageLink-NavLink"] {
+        border-radius: 8px;
+        padding-left: 12px !important;
+        box-shadow: inset 0 0 0 0 #E9C9A0;
+        transition: box-shadow 0.15s ease, background-color 0.15s ease,
+                    padding-left 0.15s ease;
+    }
+    [data-testid="stPageLink-NavLink"]:hover {
+        background-color: rgba(233, 201, 160, 0.12);
+        box-shadow: inset 3px 0 0 0 #E9C9A0;
+        padding-left: 16px !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
 # Auth gate
 # Only the login/signup page is reachable until a user has
 # authenticated. This runs on every script rerun (Streamlit reuses
@@ -72,11 +135,18 @@ else:
         icon="📥",
     )
 
+    discover_recipes = st.Page(
+        "pages/discover_recipes.py",
+        title="Discover Recipes",
+        icon="🔎",
+    )
+
     pg = st.navigation(
         [
             cooking_assistant,
             my_recipes,
             import_recipe,
+            discover_recipes,
         ]
     )
 

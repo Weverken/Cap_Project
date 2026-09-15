@@ -1,0 +1,17 @@
+# CookMate theme — warm, kitchen-inspired palette.
+# Streamlit theme docs: https://docs.streamlit.io/develop/api-reference/configuration/config.toml
+
+[theme]
+# Main page area
+backgroundColor = "#F7EDE0"
+secondaryBackgroundColor = "#E9D9C0"
+primaryColor = "#A0522D"
+textColor = "#3E2723"
+font = "sans serif"
+
+[theme.sidebar]
+# Sidebar area — dark warm brown, light text for contrast
+backgroundColor = "#5C3A21"
+secondaryBackgroundColor = "#6F4A2E"
+primaryColor = "#E9C9A0"
+textColor = "#F7EDE0"
