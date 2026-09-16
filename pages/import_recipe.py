@@ -33,7 +33,6 @@ import_method = st.radio(
     "How would you like to add your recipe?",
     [
         "📷 Upload Image",
-        "📄 Upload Document",
         "🔗 Recipe URL",
     ],
     horizontal=True,
@@ -70,28 +69,6 @@ if import_method == "📷 Upload Image":
                 st.error(f"Couldn't extract a recipe: {result['error']}")
             else:
                 start_new_extraction(result["recipe"])
-
-
-# Document
-
-elif import_method == "📄 Upload Document":
-
-    st.subheader("Upload a recipe document")
-
-    uploaded_file = st.file_uploader(
-        "Choose a document",
-        type=["pdf", "png", "jpg", "jpeg"],
-    )
-
-    if uploaded_file:
-        st.success(
-            f"Uploaded: {uploaded_file.name}"
-        )
-
-        st.info(
-            "AI document processing will be added here."
-        )
-
 
 # URL
 
