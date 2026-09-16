@@ -1,6 +1,6 @@
 # CookMate
 
-An AI cooking assistant that actually does things with your recipes, not just talk about them.
+The virtual recipe book that turns into your sous chef.
 
 ## Overview
 
