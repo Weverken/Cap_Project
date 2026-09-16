@@ -10,7 +10,7 @@ with hero_col:
     st.markdown("# 🍳 CookMate")
 
     st.markdown(
-        "### Cook with an assistant that knows what's in your pan."
+        "### The virtual recipe book that turns into your sous chef!"
     )
 
     st.write(
