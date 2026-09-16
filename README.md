@@ -42,15 +42,15 @@ It's built for anyone who cooks from recipes they've collected, especially the k
 
 The short version: Streamlit pages call either the chat agent, the recipe importer, or the recipe discovery module, and all three eventually talk to Gemini and log to Postgres and Langfuse. The chat agent has its own set of tools it can call mid-conversation, split between plain deterministic functions and thin wrappers that give those functions access to the database on the model's behalf.
 
-Full writeup, including the reasoning behind a few decisions that changed partway through the project (most notably moving off SQLite before deployment), is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Every tool the chat agent can call is documented individually in [`docs/TOOLS.md`](docs/TOOLS.md).
+Full writeup, including the reasoning behind a few decisions that changed partway through the project, is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Every tool the chat agent can call is documented individually in [`docs/TOOLS.md`](docs/TOOLS.md).
 
 ## Installation & Setup
 
 ### Prerequisites
 
 - Python 3.12 or newer
-- A Postgres database (a free Supabase or Neon project works fine)
 - A Google API key for Gemini, from [Google AI Studio](https://aistudio.google.com/apikey)
+- A Postgres database (a free Supabase or Neon project works fine)
 - Optionally, a free [Langfuse](https://cloud.langfuse.com) account for tracing
 
 ### Installation Steps
@@ -101,7 +101,7 @@ The database tables get created automatically on first run, there's no separate 
 
 ## Deployment
 
-**Live Application:** [add your deployed URL here]
+**Live Application:** [https://cookmateproject.streamlit.app/]
 
 **Deployment Platform:** Streamlit Community Cloud
 
