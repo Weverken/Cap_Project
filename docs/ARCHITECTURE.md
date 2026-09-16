@@ -251,8 +251,6 @@ The worksheet above covers the plan. This section covers the reasoning behind a 
 
 **Structured output and Google Search grounding are never combined in the same call.** That combination is documented as unreliable on the specific model this project uses, with reports of it silently returning no text on longer prompts. Recipe discovery instead gets plain text back from a grounded call, formatted through prompt instructions, and the source links shown separately come from the response's grounding metadata rather than the model's own writing.
 
-**A domain blocklist enforced in code.** Gemini's search tool has an `exclude_domains` option, but its own documentation states it isn't supported outside Vertex AI, so it does nothing on the API key based access this project uses. Keeping social media links out of the suggested sources needed an actual blocklist checked in code after the search results come back.
-
 **Web page text gets cross-checked against the page's own structured data.** URL import runs page content through `trafilatura` to strip navigation, ads, and footers before anything reaches the model. That stripping had a side effect worth catching: many recipe sites show prep time, cook time, and servings in a small metadata widget separate from the main article text, and trafilatura's boilerplate detection was removing that widget along with the actual boilerplate. The fix was to also parse the page's `schema.org/Recipe` structured data, the same JSON-LD data Google uses for its own recipe search results, and hand those numbers to the model directly instead of relying on it to infer them from text that might not contain them anymore.
 
 ---
@@ -264,8 +262,6 @@ The worksheet above covers the plan. This section covers the reasoning behind a 
 ---
 
 ## Part 6: Next Steps
-
-This section was originally meant for planning ahead before building. Since this document is being finalized close to submission, it's written instead as a note on what's left, in case there's time to keep going after this is turned in.
 
 **Would harden if there were more time:**
 - A couple of the assistant's behaviors are currently enforced through the system prompt rather than in code: not repeating already-saved recipes in Discover Recipes, and telling apart a permanent recipe change from a one-off substitution. Both work well in practice but aren't a hard guarantee the way a database constraint would be.
