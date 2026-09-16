@@ -104,7 +104,7 @@ else:
     with st.sidebar:
         st.caption(f"Signed in as **{st.session_state.get('username', 'user')}**")
         if st.button("Log Out"):
-            for key in ("user_id", "username", "agent", "messages"):
+            for key in ("user_id", "username", "agent", "messages", "chat_recipe_id"):
                 st.session_state.pop(key, None)
             st.rerun()
 

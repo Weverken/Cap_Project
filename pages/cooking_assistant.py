@@ -95,6 +95,19 @@ st.divider()
 
 st.subheader("Chat")
 
+# If the active recipe changed since the last time this page ran (a
+# different recipe was started, or the session ended), the old chat
+# history is about a different recipe and shouldn't carry over.
+current_recipe_id = active_session["recipe_id"] if active_session else None
+
+if "chat_recipe_id" not in st.session_state:
+    st.session_state.chat_recipe_id = current_recipe_id
+elif st.session_state.chat_recipe_id != current_recipe_id:
+    st.session_state.pop("agent", None)
+    st.session_state.pop("agent_error", None)
+    st.session_state.messages = []
+    st.session_state.chat_recipe_id = current_recipe_id
+
 if "agent" not in st.session_state:
     try:
         st.session_state.agent = CookingAgent()

@@ -1,893 +1,112 @@
 import streamlit as st
 
-from src.database.recipes import (
-    get_all_recipes,
-    get_recipe,
-    create_recipe,
-    update_recipe,
-    delete_recipe,
-)
-from src.database.cooking_sessions import start_cooking_session
+from src.auth import login, signup
 
 
-st.title("📚 My Recipes")
+hero_col, form_col = st.columns([3, 2], gap="large")
 
-user_id = st.session_state["user_id"]
+with hero_col:
 
+    st.markdown("# 🍳 CookMate")
 
-# ==================================================
-# ADD RECIPE
-# ==================================================
-
-if "adding_recipe" in st.session_state:
-
-    st.header("➕ Add Recipe")
-
-    # ------------------------------------------
-    # Recipe information
-    # ------------------------------------------
-
-    name = st.text_input(
-        "Recipe Name",
-        placeholder="e.g. Chicken Curry",
+    st.markdown(
+        "### Cook with an assistant that knows what's in your pan."
     )
 
-    description = st.text_area(
-        "Description",
-        placeholder="A short description of the recipe...",
+    st.write(
+        "Most recipe apps just store text. CookMate's assistant can "
+        "actually act on your recipes — scale them, swap out "
+        "ingredients you don't have, and keep track of exactly which "
+        "step you're on while you cook."
     )
 
-    # ------------------------------------------
-    # Time and servings
-    # ------------------------------------------
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        servings = st.number_input(
-            "Servings",
-            min_value=1,
-            value=2,
-            step=1,
-        )
-
-    with col2:
-        prep_time = st.number_input(
-            "Prep Time (minutes)",
-            min_value=0,
-            value=10,
-            step=1,
-        )
-
-    with col3:
-        cook_time = st.number_input(
-            "Cook Time (minutes)",
-            min_value=0,
-            value=20,
-            step=1,
-        )
-
     st.divider()
 
-    # ------------------------------------------
-    # Ingredients
-    # ------------------------------------------
-
-    st.subheader("🥕 Ingredients")
-
-    st.write("Add the ingredients for your recipe.")
-
-    # Number of ingredient rows
-    if "add_ingredient_count" not in st.session_state:
-        st.session_state["add_ingredient_count"] = 1
-
-    ingredients = []
-
-    for i in range(
-        st.session_state["add_ingredient_count"]
-    ):
-
-        col1, col2, col3 = st.columns([1, 1, 3])
-
-        with col1:
-            quantity = st.number_input(
-                "Quantity",
-                min_value=0.0,
-                value=1.0,
-                key=f"add_quantity_{i}",
-            )
-
-        with col2:
-            unit = st.text_input(
-                "Unit",
-                key=f"add_unit_{i}",
-                placeholder="g, tbsp, etc.",
-            )
-
-        with col3:
-            ingredient_name = st.text_input(
-                "Ingredient",
-                key=f"add_ingredient_{i}",
-                placeholder="Ingredient name",
-            )
-
-        ingredients.append(
-            {
-                "quantity": quantity,
-                "unit": unit,
-                "name": ingredient_name,
-            }
-        )
-
-    if st.button("➕ Add Ingredient"):
-
-        st.session_state["add_ingredient_count"] += 1
-
-        st.rerun()
-
-    st.divider()
-
-    # ------------------------------------------
-    # Instructions
-    # ------------------------------------------
-
-    st.subheader("👨‍🍳 Instructions")
-
-    if "add_instruction_count" not in st.session_state:
-        st.session_state["add_instruction_count"] = 1
-
-    instructions = []
-
-    for i in range(
-        st.session_state["add_instruction_count"]
-    ):
-
-        instruction = st.text_area(
-            f"Step {i + 1}",
-            key=f"add_instruction_{i}",
-            placeholder=f"Describe step {i + 1}...",
-        )
-
-        instructions.append(instruction)
-
-    if st.button("➕ Add Step"):
-
-        st.session_state["add_instruction_count"] += 1
-
-        st.rerun()
-
-    st.divider()
-
-    # ------------------------------------------
-    # Tags
-    # ------------------------------------------
-
-    st.subheader("🏷️ Tags")
-
-    tags_text = st.text_input(
-        "Tags",
-        placeholder="chicken, quick, dinner",
-        help="Separate tags with commas.",
+    st.markdown("**Talk to it while you cook**")
+    st.write(
+        "\"Scale my curry to 6 people.\" \"I don't have buttermilk, "
+        "what can I use instead?\" \"I'm on this step and the sauce "
+        "looks too thick.\" The assistant knows what recipe you have "
+        "open and which step you're on, so you don't have to explain "
+        "context every time."
     )
 
-    tags = [
-        tag.strip()
-        for tag in tags_text.split(",")
-        if tag.strip()
-    ]
+    st.markdown("**Build your own recipe book**")
+    st.write(
+        "Save recipes, search them by name or by what's already in "
+        "your fridge, and ask what you can make with the ingredients "
+        "you have on hand."
+    )
+
+    st.markdown("**Import from a photo or a link**")
+    st.write(
+        "Snap a photo of a handwritten recipe card — even messy "
+        "handwriting — or paste a link to a recipe online. Review "
+        "what gets extracted, fix anything that's off, and save it."
+    )
 
     st.divider()
 
-    # ------------------------------------------
-    # Save / Cancel
-    # ------------------------------------------
+    st.caption(
+        "Sign up to get started — your recipes are private to your "
+        "account."
+    )
 
-    col1, col2 = st.columns(2)
+with form_col:
 
-    with col1:
+    tab_login, tab_signup = st.tabs(["Log In", "Sign Up"])
 
-        if st.button(
-            "💾 Save Recipe",
-            type="primary",
-            use_container_width=True,
-        ):
+    with tab_login:
 
-            # Validate recipe name
-            if not name.strip():
+        with st.form("login_form"):
+            username = st.text_input("Username", key="login_username")
+            password = st.text_input("Password", type="password", key="login_password")
+            submitted = st.form_submit_button("Log In", type="primary")
 
-                st.error(
-                    "Please enter a recipe name."
-                )
-
-            # Validate ingredients
-            elif not any(
-                ingredient["name"].strip()
-                for ingredient in ingredients
-            ):
-
-                st.error(
-                    "Please add at least one ingredient."
-                )
-
-            # Validate instructions
-            elif not any(
-                instruction.strip()
-                for instruction in instructions
-            ):
-
-                st.error(
-                    "Please add at least one instruction."
-                )
-
-            else:
-
-                # Remove empty ingredients
-                ingredients = [
-                    ingredient
-                    for ingredient in ingredients
-                    if ingredient["name"].strip()
-                ]
-
-                # Remove empty instructions
-                instructions = [
-                    instruction.strip()
-                    for instruction in instructions
-                    if instruction.strip()
-                ]
-
-                # Create recipe in database
-                recipe_id = create_recipe(
-                    user_id=user_id,
-                    name=name.strip(),
-                    description=description.strip(),
-                    servings=servings,
-                    prep_time=prep_time,
-                    cook_time=cook_time,
-                    ingredients=ingredients,
-                    instructions=instructions,
-                    tags=tags,
-                )
-
-                # Clear add mode
-                del st.session_state["adding_recipe"]
-
-                # Reset counters
-                st.session_state["add_ingredient_count"] = 1
-                st.session_state["add_instruction_count"] = 1
-
-                # Open newly created recipe
-                st.session_state["selected_recipe_id"] = recipe_id
-
-                st.rerun()
-
-    with col2:
-
-        if st.button(
-            "Cancel",
-            use_container_width=True,
-        ):
-
-            del st.session_state["adding_recipe"]
-
-            # Reset counters
-            st.session_state["add_ingredient_count"] = 1
-            st.session_state["add_instruction_count"] = 1
-
-            st.rerun()
-
-
-# ==================================================
-# EDIT RECIPE
-# ==================================================
-
-elif "editing_recipe_id" in st.session_state:
-
-    recipe_id = st.session_state["editing_recipe_id"]
-
-    recipe = get_recipe(recipe_id)
-
-    if recipe is None:
-
-        st.error("Recipe not found.")
-
-        if st.button("← Back to My Recipes"):
-
-            del st.session_state["editing_recipe_id"]
-
-            st.rerun()
-
-    else:
-
-        st.header("✏️ Edit Recipe")
-
-        # ------------------------------------------
-        # Recipe information
-        # ------------------------------------------
-
-        name = st.text_input(
-            "Recipe Name",
-            value=recipe["name"],
-        )
-
-        description = st.text_area(
-            "Description",
-            value=recipe["description"] or "",
-        )
-
-        # ------------------------------------------
-        # Time and servings
-        # ------------------------------------------
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            servings = st.number_input(
-                "Servings",
-                min_value=1,
-                value=recipe["servings"],
-                step=1,
-            )
-
-        with col2:
-            prep_time = st.number_input(
-                "Prep Time (minutes)",
-                min_value=0,
-                value=recipe["prep_time"],
-                step=1,
-            )
-
-        with col3:
-            cook_time = st.number_input(
-                "Cook Time (minutes)",
-                min_value=0,
-                value=recipe["cook_time"],
-                step=1,
-            )
-
-        st.divider()
-
-        # ------------------------------------------
-        # Ingredients
-        # ------------------------------------------
-
-        st.subheader("🥕 Ingredients")
-
-        edited_ingredients = []
-
-        for i, ingredient in enumerate(
-            recipe["ingredients"]
-        ):
-
-            col1, col2, col3, col4 = st.columns(
-                [1, 1, 3, 0.5]
-            )
-
-            with col1:
-                quantity = st.number_input(
-                    "Quantity",
-                    min_value=0.0,
-                    value=float(ingredient["quantity"]),
-                    key=f"quantity_{i}",
-                )
-
-            with col2:
-                unit = st.text_input(
-                    "Unit",
-                    value=ingredient["unit"],
-                    key=f"unit_{i}",
-                )
-
-            with col3:
-                ingredient_name = st.text_input(
-                    "Ingredient",
-                    value=ingredient["name"],
-                    key=f"ingredient_{i}",
-                )
-
-            with col4:
-                st.write("")
-                st.write("")
-
-                remove = st.checkbox(
-                    "Remove",
-                    key=f"remove_{i}",
-                )
-
-            if not remove:
-
-                edited_ingredients.append(
-                    {
-                        "quantity": quantity,
-                        "unit": unit,
-                        "name": ingredient_name,
-                    }
-                )
-
-        # ------------------------------------------
-        # Add ingredient
-        # ------------------------------------------
-
-        if "new_ingredient_count" not in st.session_state:
-            st.session_state["new_ingredient_count"] = 0
-
-        if st.button("➕ Add Ingredient"):
-
-            st.session_state["new_ingredient_count"] += 1
-
-            st.rerun()
-
-        for i in range(
-            st.session_state["new_ingredient_count"]
-        ):
-
-            col1, col2, col3 = st.columns([1, 1, 3])
-
-            with col1:
-                quantity = st.number_input(
-                    "Quantity",
-                    min_value=0.0,
-                    value=1.0,
-                    key=f"new_quantity_{i}",
-                )
-
-            with col2:
-                unit = st.text_input(
-                    "Unit",
-                    key=f"new_unit_{i}",
-                    placeholder="g, tbsp, etc.",
-                )
-
-            with col3:
-                ingredient_name = st.text_input(
-                    "Ingredient",
-                    key=f"new_ingredient_{i}",
-                    placeholder="Ingredient name",
-                )
-
-            if ingredient_name:
-
-                edited_ingredients.append(
-                    {
-                        "quantity": quantity,
-                        "unit": unit,
-                        "name": ingredient_name,
-                    }
-                )
-
-        st.divider()
-
-        # ------------------------------------------
-        # Instructions
-        # ------------------------------------------
-
-        st.subheader("👨‍🍳 Instructions")
-
-        edited_instructions = []
-
-        for i, instruction in enumerate(
-            recipe["instructions"]
-        ):
-
-            edited_instruction = st.text_area(
-                f"Step {i + 1}",
-                value=instruction,
-                key=f"instruction_{i}",
-            )
-
-            if edited_instruction.strip():
-
-                edited_instructions.append(
-                    edited_instruction
-                )
-
-        st.divider()
-
-        # ------------------------------------------
-        # Tags
-        # ------------------------------------------
-
-        st.subheader("🏷️ Tags")
-
-        tags_text = st.text_input(
-            "Tags",
-            value=", ".join(recipe["tags"]),
-            help="Separate tags with commas.",
-        )
-
-        edited_tags = [
-            tag.strip()
-            for tag in tags_text.split(",")
-            if tag.strip()
-        ]
-
-        st.divider()
-
-        # ------------------------------------------
-        # Save / Cancel
-        # ------------------------------------------
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-
-            if st.button(
-                "💾 Save Changes",
-                type="primary",
-                use_container_width=True,
-            ):
-
-                if not name.strip():
-
-                    st.error(
-                        "Recipe name cannot be empty."
-                    )
-
-                elif not edited_ingredients:
-
-                    st.error(
-                        "A recipe needs at least one ingredient."
-                    )
-
-                elif not edited_instructions:
-
-                    st.error(
-                        "A recipe needs at least one instruction."
-                    )
-
+            if submitted:
+                if not username or not password:
+                    st.error("Please enter both a username and password.")
                 else:
-
-                    update_recipe(
-                        recipe_id=recipe_id,
-                        name=name.strip(),
-                        description=description.strip(),
-                        servings=servings,
-                        prep_time=prep_time,
-                        cook_time=cook_time,
-                        ingredients=edited_ingredients,
-                        instructions=edited_instructions,
-                        tags=edited_tags,
-                    )
-
-                    del st.session_state[
-                        "editing_recipe_id"
-                    ]
-
-                    st.success(
-                        "Recipe updated successfully!"
-                    )
-
-                    st.rerun()
-
-        with col2:
-
-            if st.button(
-                "Cancel",
-                use_container_width=True,
-            ):
-
-                del st.session_state[
-                    "editing_recipe_id"
-                ]
-
-                st.rerun()
-
-
-# ==================================================
-# RECIPE DETAIL
-# ==================================================
-
-elif "selected_recipe_id" in st.session_state:
-
-    recipe_id = st.session_state["selected_recipe_id"]
-
-    recipe = get_recipe(recipe_id)
-
-    if recipe is None:
-
-        st.error("Recipe not found.")
-
-        if st.button("← Back to My Recipes"):
-
-            del st.session_state["selected_recipe_id"]
-
-            st.rerun()
-
-    else:
-
-        # ------------------------------------------
-        # Back
-        # ------------------------------------------
-
-        if st.button("← Back to My Recipes"):
-
-            del st.session_state["selected_recipe_id"]
-
-            st.rerun()
-
-        st.divider()
-
-        # ------------------------------------------
-        # Recipe header
-        # ------------------------------------------
-
-        st.header(recipe["name"])
-
-        if recipe["description"]:
-
-            st.write(recipe["description"])
-
-        # ------------------------------------------
-        # Recipe information
-        # ------------------------------------------
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric(
-                "Servings",
-                recipe["servings"],
-            )
-
-        with col2:
-            st.metric(
-                "Prep Time",
-                f"{recipe['prep_time']} min",
-            )
-
-        with col3:
-            st.metric(
-                "Cook Time",
-                f"{recipe['cook_time']} min",
-            )
-
-        st.divider()
-
-        # ------------------------------------------
-        # Ingredients
-        # ------------------------------------------
-
-        st.subheader("🥕 Ingredients")
-
-        for ingredient in recipe["ingredients"]:
-
-            st.write(
-                f"- **{ingredient['quantity']} "
-                f"{ingredient['unit']}** "
-                f"{ingredient['name']}"
-            )
-
-        st.divider()
-
-        # ------------------------------------------
-        # Instructions
-        # ------------------------------------------
-
-        st.subheader("👨‍🍳 Instructions")
-
-        for i, instruction in enumerate(
-            recipe["instructions"],
-            start=1,
-        ):
-
-            st.write(
-                f"**{i}.** {instruction}"
-            )
-
-        st.divider()
-
-        # ------------------------------------------
-        # Tags
-        # ------------------------------------------
-
-        if recipe["tags"]:
-
-            st.subheader("🏷️ Tags")
-
-            st.write(
-                " ".join(
-                    f"`{tag}`"
-                    for tag in recipe["tags"]
-                )
-            )
-
-        st.divider()
-
-        # ------------------------------------------
-        # Actions
-        # ------------------------------------------
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-
-            if st.button(
-                "👨‍🍳 Start Cooking",
-                type="primary",
-                use_container_width=True,
-            ):
-
-                start_cooking_session(
-                    user_id=user_id,
-                    recipe_id=recipe["id"],
-                    servings=recipe["servings"],
-                )
-
-                st.switch_page("pages/cooking_assistant.py")
-
-        with col2:
-
-            if st.button(
-                "✏️ Edit Recipe",
-                use_container_width=True,
-            ):
-
-                st.session_state[
-                    "editing_recipe_id"
-                ] = recipe["id"]
-
-                st.rerun()
-
-        with col3:
-
-            if st.button(
-                "🗑️ Delete Recipe",
-                use_container_width=True,
-            ):
-
-                st.session_state[
-                    "confirm_delete"
-                ] = True
-
-        # ------------------------------------------
-        # Delete confirmation
-        # ------------------------------------------
-
-        if st.session_state.get(
-            "confirm_delete",
-            False,
-        ):
-
-            st.warning(
-                f"Are you sure you want to delete "
-                f"**{recipe['name']}**?"
-            )
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-
-                if st.button(
-                    "Yes, delete",
-                    type="primary",
-                    use_container_width=True,
-                ):
-
-                    delete_recipe(recipe["id"])
-
-                    del st.session_state[
-                        "selected_recipe_id"
-                    ]
-
-                    del st.session_state[
-                        "confirm_delete"
-                    ]
-
-                    st.success("Recipe deleted.")
-
-                    st.rerun()
-
-            with col2:
-
-                if st.button(
-                    "Cancel",
-                    use_container_width=True,
-                ):
-
-                    del st.session_state[
-                        "confirm_delete"
-                    ]
-
-                    st.rerun()
-
-
-# ==================================================
-# RECIPE BOOK
-# ==================================================
-
-else:
-
-    # ------------------------------------------
-    # Header + Add Recipe button
-    # ------------------------------------------
-
-    col1, col2 = st.columns([4, 1])
-
-    with col1:
-
-        st.write(
-            "Your personal recipe collection."
-        )
-
-    with col2:
-
-        if st.button(
-            "➕ Add Recipe",
-            use_container_width=True,
-        ):
-
-            st.session_state["adding_recipe"] = True
-
-            st.rerun()
-
-    st.divider()
-
-    # ------------------------------------------
-    # Search
-    # ------------------------------------------
-
-    search = st.text_input(
-        "🔍 Search recipes",
-        placeholder="Search by recipe name...",
-    )
-
-    recipes = get_all_recipes(user_id)
-
-    filtered_recipes = [
-        recipe
-        for recipe in recipes
-        if search.lower() in recipe["name"].lower()
-    ]
-
-    # ------------------------------------------
-    # Display recipes
-    # ------------------------------------------
-
-    if not filtered_recipes:
-
-        st.info("No recipes found.")
-
-    else:
-
-        cols = st.columns(3)
-
-        for i, recipe in enumerate(
-            filtered_recipes
-        ):
-
-            with cols[i % 3]:
-
-                with st.container(border=True):
-
-                    st.subheader(recipe["name"])
-
-                    if recipe["description"]:
-
-                        st.write(
-                            recipe["description"]
-                        )
-
-                    total_time = (
-                        recipe["prep_time"]
-                        + recipe["cook_time"]
-                    )
-
-                    st.write(
-                        f"⏱️ {total_time} min"
-                    )
-
-                    st.write(
-                        f"🍽️ "
-                        f"{recipe['servings']} servings"
-                    )
-
-                    if st.button(
-                        "View Recipe",
-                        key=f"view_{recipe['id']}",
-                        use_container_width=True,
-                    ):
-
-                        st.session_state[
-                            "selected_recipe_id"
-                        ] = recipe["id"]
-
+                    result = login(username, password)
+
+                    if result["success"]:
+                        st.session_state["user_id"] = result["user_id"]
+                        st.session_state["username"] = username.strip()
                         st.rerun()
+                    else:
+                        st.error(result["error"])
+
+    with tab_signup:
+
+        with st.form("signup_form"):
+            new_username = st.text_input(
+                "Username",
+                key="signup_username",
+                help="3-32 characters: letters, numbers, or underscores only.",
+            )
+            new_password = st.text_input(
+                "Password",
+                type="password",
+                key="signup_password",
+                help="At least 8 characters.",
+            )
+            confirm_password = st.text_input(
+                "Confirm Password", type="password", key="signup_confirm"
+            )
+            submitted = st.form_submit_button("Create Account", type="primary")
+
+            if submitted:
+                if not new_username or not new_password:
+                    st.error("Please fill in all fields.")
+                elif new_password != confirm_password:
+                    st.error("Passwords don't match.")
+                else:
+                    result = signup(new_username, new_password)
+
+                    if result["success"]:
+                        st.session_state["user_id"] = result["user_id"]
+                        st.session_state["username"] = new_username.strip()
+                        st.success("Account created!")
+                        st.rerun()
+                    else:
+                        st.error(result["error"])
