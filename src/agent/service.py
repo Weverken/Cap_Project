@@ -1,17 +1,10 @@
 """
-Cooking agent service.
+The cooking agent - basically a Gemini chat session with tools attached.
 
-Wraps a Gemini chat session configured with:
-- The system prompt (persona + tool-usage guidance)
-- The agent-facing tools (automatic function calling)
-- Langfuse tracing (via src.observability)
-- Retry logic for transient API failures
-
-Automatic function calling means we hand the SDK real Python
-functions and it handles: deciding when to call them, executing
-them, feeding results back to the model, and looping until the
-model produces a final text answer. We don't manually parse
-function-call responses.
+Handles the system prompt, tool registration, tracing, and retries.
+Uses Gemini's automatic function calling, so we just hand it real
+Python functions and it figures out when to call them and loops until
+it has a final answer. No manual parsing of tool-call responses.
 """
 
 import os
@@ -36,13 +29,13 @@ from src.observability import setup_observability
 
 
 class CookingAgent:
-    """A stateful chat session with the cooking assistant."""
+    """One chat session with the cooking assistant."""
 
     def __init__(self):
         load_dotenv()
 
-        # Set up tracing before creating any client/chat so the
-        # instrumentor is active for every call this agent makes.
+        # Needs to run before the client is created so tracing catches
+        # everything.
         setup_observability()
 
         api_key = os.getenv("GOOGLE_API_KEY")
@@ -68,16 +61,10 @@ class CookingAgent:
 
     @observe(name="cooking_agent_message")
     def send_message(self, message: str) -> str:
-        """
-        Send a user message to the agent and return its text
-        response. Tool calls the model decides to make happen
-        automatically before this returns.
-
-        Retries on transient API errors (rate limits, 5xx server
-        errors) with exponential backoff. Non-transient errors
-        (bad request, auth failure) fail immediately since retrying
-        them can't help.
-        """
+        """Send a message, get the reply back as text. Any tool calls
+        happen automatically in between. Retries a couple times on
+        rate limits / server errors; gives up right away on stuff like
+        a bad request that won't fix itself."""
         last_error = None
 
         for attempt in range(MAX_RETRIES):
@@ -89,7 +76,6 @@ class CookingAgent:
                 last_error = e
 
                 if e.code not in RETRYABLE_STATUS_CODES:
-                    # Not a transient failure — retrying won't help.
                     return self._friendly_error(e)
 
                 if attempt < MAX_RETRIES - 1:
@@ -97,8 +83,7 @@ class CookingAgent:
                     time.sleep(delay)
 
             except Exception as e:
-                # Non-API errors (network issues, etc.) — still
-                # worth a couple of retries.
+                # network hiccups etc - still worth a retry
                 last_error = e
 
                 if attempt < MAX_RETRIES - 1:

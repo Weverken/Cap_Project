@@ -4,15 +4,11 @@ from src.database.connection import get_connection, execute
 
 
 def initialize_cooking_sessions_table():
-    """
-    Create the cooking_sessions table if it does not already exist.
+    """Create the cooking_sessions table if needed.
 
-    Design note: only one session is "active" per user at a time.
-    Rather than enforcing that with a unique constraint (which
-    would complicate switching recipes mid-cook), it's enforced at
-    the application layer in start_cooking_session(), which ends
-    any existing active session before starting a new one.
-    """
+    Only one session should be active per user - that's enforced in
+    start_cooking_session() rather than with a DB constraint, since a
+    constraint would make switching recipes mid-cook annoying."""
 
     conn = get_connection()
 

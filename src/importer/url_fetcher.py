@@ -1,18 +1,11 @@
 """
-Recipe URL fetching.
+Grabs recipe pages and cleans them up before they hit the model.
 
-Uses trafilatura to fetch a page and extract just the main
-article content — stripping navigation, ads, sidebars, and
-footers before anything gets sent to the model.
-
-Also separately parses any schema.org Recipe JSON-LD embedded in
-the page (most recipe sites include this for Google's own recipe
-rich-results). This matters because prep time, cook time, and
-servings are usually shown in a small metadata widget near the
-top of the page, not in the flowing article prose — trafilatura's
-boilerplate detection strips exactly that kind of widget out as
-non-article content, so without this, that data never reaches the
-model at all, regardless of how good the extraction prompt is.
+trafilatura strips nav/ads/footers and leaves just the article text.
+On top of that we separately parse the page's schema.org Recipe
+JSON-LD if it's there, because trafilatura tends to strip out the
+little prep-time/cook-time/servings widget along with the real
+boilerplate - so without this, that info just never reaches the model.
 """
 
 import json
@@ -30,18 +23,8 @@ _ISO8601_DURATION_PATTERN = re.compile(r"PT(?:(\d+)H)?(?:(\d+)M)?")
 
 
 def fetch_recipe_page_text(url: str) -> dict:
-    """
-    Fetch a URL and extract its main readable content, augmented
-    with any structured Recipe metadata (prep/cook time, servings)
-    found in the page's schema.org JSON-LD, if present.
-
-    Returns:
-        dict: {
-            "success": bool,
-            "error": str | None,
-            "text": str | None,
-        }
-    """
+    """Fetch a URL and pull out the readable recipe text, with prep/cook
+    time and servings prepended if we found them in the page's JSON-LD."""
 
     if not url or not url.strip():
         return _error("Please enter a URL.")
@@ -85,13 +68,8 @@ def fetch_recipe_page_text(url: str) -> dict:
 
 
 def _extract_structured_recipe_hints(html: str) -> str | None:
-    """
-    Look for schema.org Recipe JSON-LD in the raw page HTML and
-    turn prepTime/cookTime/recipeYield into a short, unambiguous
-    text block to prepend before the extracted prose — giving the
-    model authoritative numbers instead of needing to infer them
-    from text that may not contain them at all.
-    """
+    """Pull prepTime/cookTime/recipeYield out of the page's Recipe
+    JSON-LD, if any, and turn them into a short text block."""
 
     recipe_data = _find_recipe_jsonld(html)
 

@@ -1,13 +1,7 @@
 """
-Tool: find_recipes_by_ingredients
-
-Given a list of ingredients someone has on hand, finds which of
-their saved recipes are the closest match — ranked by how many
-required ingredients they already have, with the rest listed as
-missing.
-
-This is the tool behind prompts like:
-"I have chicken, rice, and broccoli. What can I make?"
+Ranks a user's saved recipes by how many of a given set of ingredients
+they already have on hand. Backs prompts like "I have chicken, rice,
+and broccoli, what can I make?"
 """
 
 
@@ -16,41 +10,13 @@ def find_by_ingredients(
     available_ingredients: list,
     min_match_ratio: float = 0.0,
 ) -> dict:
-    """
-    Rank a user's saved recipes by how well they match a list of
-    ingredients the user currently has.
+    """Rank recipes by how many available_ingredients they cover.
 
-    Args:
-        recipes (list[dict]): Recipes as returned by
-            src.database.recipes.get_all_recipes(). Each recipe
-            must have "id", "name", and "ingredients" (list of
-            dicts with a "name" key).
-        available_ingredients (list[str]): Ingredients the user
-            currently has on hand (e.g. ["chicken", "rice",
-            "broccoli"]). Matching is case-insensitive and uses
-            substring matching in both directions, so "chicken
-            breast" in a recipe matches "chicken" in the list.
-        min_match_ratio (float): Only include recipes where at
-            least this fraction of ingredients are matched
-            (0.0-1.0). Defaults to 0.0 (include everything, let
-            the caller/agent decide what's a "close enough" match).
-
-    Returns:
-        dict: {
-            "success": bool,
-            "error": str | None,
-            "available_ingredients": list[str],
-            "matches": list[dict] | None,
-            # Each match: {
-            #   "recipe_id", "recipe_name",
-            #   "match_ratio" (0.0-1.0),
-            #   "matched_ingredients": list[str],
-            #   "missing_ingredients": list[str],
-            # }
-            # Sorted by match_ratio descending, then by fewest
-            # missing ingredients.
-        }
-    """
+    Matching is case-insensitive substring matching both ways, so
+    "chicken breast" in a recipe matches "chicken" on the list.
+    min_match_ratio filters out weak matches (0 = keep everything).
+    Returns matches sorted best-first, each with matched/missing
+    ingredient lists."""
 
     # ---- Input validation ----
 
@@ -138,11 +104,7 @@ def find_by_ingredients(
 
 
 def _is_available(ingredient_name: str, normalized_available: list) -> bool:
-    """
-    Check if a recipe ingredient is covered by the available
-    ingredients list, using case-insensitive substring matching
-    in both directions (e.g. "chicken breast" <-> "chicken").
-    """
+    """Substring match both ways, e.g. "chicken breast" <-> "chicken"."""
     name = ingredient_name.lower()
 
     for available in normalized_available:

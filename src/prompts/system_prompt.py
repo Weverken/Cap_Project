@@ -1,10 +1,5 @@
-"""
-System prompt(s) for the cooking assistant agent.
-
-Kept in a dedicated module rather than hardcoded in the agent
-service, so the prompt can be edited/reviewed independently of
-the agent logic.
-"""
+"""System prompt for the cooking agent - kept separate from service.py
+so it's easy to tweak without digging through the agent logic."""
 
 COOKING_ASSISTANT_SYSTEM_PROMPT = """\
 You are CookMate, a cooking assistant embedded in a recipe app.

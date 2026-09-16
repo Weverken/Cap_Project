@@ -160,7 +160,6 @@ if prompt := st.chat_input("Ask me anything about cooking..."):
         }
     )
 
-    # Step navigation via chat (advance_cooking_step_tool) can change
-    # the session's current_step — rerun so the Cooking Mode card
-    # above reflects it immediately instead of on the next interaction.
+    # rerun so the Cooking Mode card above updates right away if the
+    # chat just moved the step
     st.rerun()

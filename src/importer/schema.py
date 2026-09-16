@@ -1,11 +1,10 @@
 """
-Structured schema for AI-extracted recipes.
+Pydantic schema for recipe extraction.
 
-Used as the response_schema for Gemini's structured output mode,
-so extraction returns data matching this shape directly — no
-manual JSON parsing or "please respond only in JSON" prompting
-needed. Field descriptions here also guide the model on what to
-extract for each field.
+Passed as response_schema to Gemini, so it returns data in this exact
+shape instead of us having to parse loose JSON. The field descriptions
+double as instructions to the model, so they're more detailed than a
+normal docstring - don't trim those.
 """
 
 from pydantic import BaseModel, Field

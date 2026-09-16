@@ -16,11 +16,8 @@ st.divider()
 
 
 def start_new_extraction(recipe: dict) -> None:
-    """
-    Store a freshly extracted recipe and clear any leftover row
-    state from a previous extraction, so edits from an earlier
-    import don't bleed into this one.
-    """
+    """Store a new extraction and clear old row state so it doesn't
+    bleed into the fresh one."""
     for key in ("import_ingredient_rows", "import_instruction_rows"):
         st.session_state.pop(key, None)
 
@@ -102,9 +99,7 @@ elif import_method == "🔗 Recipe URL":
 
 # ------------------------------------------
 # Review & edit extracted recipe
-# (Shared across every import method — whatever source populated
-# st.session_state["extracted_recipe"] flows through the same
-# review/edit/save form.)
+# (same form regardless of whether it came from a photo or a URL)
 # ------------------------------------------
 
 extracted = st.session_state.get("extracted_recipe")

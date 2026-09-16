@@ -6,10 +6,7 @@ from src.database.users import initialize_users_table
 from src.agent.context import set_current_user_id
 
 
-# Database setup
-# (CREATE TABLE IF NOT EXISTS — safe to call on every startup,
-# and necessary since a fresh database has no tables yet.)
-
+# Sets up tables if they don't exist yet - safe to run on every startup.
 initialize_database()
 initialize_cooking_sessions_table()
 initialize_users_table()
@@ -25,11 +22,8 @@ st.set_page_config(
 )
 
 
-# Button styling
-# Streamlit's theme.toml only sets flat colors — this adds the
-# tactile press/lift interaction and warm-toned shadow that make
-# buttons feel like part of a kitchen app rather than a generic
-# SaaS dashboard.
+# Extra button styling - theme.toml only does flat colors, this adds
+# the hover/press feel so it doesn't look like a generic dashboard.
 
 st.markdown(
     """
@@ -88,12 +82,9 @@ st.markdown(
 )
 
 
-# Auth gate
-# Only the login/signup page is reachable until a user has
-# authenticated. This runs on every script rerun (Streamlit reuses
-# the same thread across reruns within a session), so the
-# thread-local "current user" context is always kept fresh here
-# rather than assumed to persist from an earlier rerun.
+# Auth gate - only login/signup is reachable until you're signed in.
+# Runs on every rerun since Streamlit reuses the same thread, so we
+# can't just assume the user context from a previous rerun still holds.
 
 login_page = st.Page(
     "pages/login.py",

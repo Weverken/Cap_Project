@@ -1,14 +1,10 @@
 """
-Langfuse observability setup.
+Langfuse tracing setup.
 
-Uses OpenInference's Google GenAI instrumentor to automatically
-trace every Gemini call made through the google-genai SDK —
-including the tool-calling round trips inside automatic function
-calling — without needing to manually wrap each call.
-
-Call setup_observability() once, early (e.g. when the agent
-service is first created). Calling it more than once is safe;
-the underlying instrumentor no-ops if already instrumented.
+Uses OpenInference's instrumentor so every Gemini call (including tool
+round trips) gets traced automatically - no manual wrapping needed.
+Call setup_observability() once when the agent starts; safe to call
+again, it just no-ops.
 """
 
 import os
@@ -17,13 +13,8 @@ _initialized = False
 
 
 def setup_observability() -> bool:
-    """
-    Initialize Langfuse tracing for Gemini calls.
-
-    Returns True if tracing was set up, False if it was skipped
-    (e.g. missing credentials) — the app should keep working
-    either way, just without traces.
-    """
+    """Returns True if tracing is on, False if it got skipped (e.g. no
+    keys set). Either way the app should keep working."""
     global _initialized
 
     if _initialized:
@@ -33,9 +24,6 @@ def setup_observability() -> bool:
     secret_key = os.getenv("LANGFUSE_SECRET_KEY")
 
     if not public_key or not secret_key:
-        # Observability is required by the assignment, but the
-        # app shouldn't hard-crash in local dev if it's not
-        # configured yet — surface this clearly instead.
         print(
             "[observability] LANGFUSE_PUBLIC_KEY/LANGFUSE_SECRET_KEY "
             "not set — Gemini calls will not be traced."
@@ -48,12 +36,8 @@ def setup_observability() -> bool:
             GoogleGenAIInstrumentor,
         )
 
-        # IMPORTANT: get_client() must run before instrument().
-        # It sets up Langfuse's OpenTelemetry tracer provider/exporter.
-        # If the instrumentor runs first, it attaches to whatever
-        # (no-op) tracer provider exists at that moment, and Gemini
-        # spans silently never reach Langfuse — you'd only see the
-        # top-level @observe() span with nothing nested inside it.
+        # get_client() has to run first - it sets up the tracer that the
+        # instrumentor attaches to. Wrong order and traces just vanish.
         langfuse = get_client()
 
         if not langfuse.auth_check():

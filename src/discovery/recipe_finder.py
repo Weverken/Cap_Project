@@ -1,16 +1,13 @@
 """
-Suggests real recipes from the web using Gemini's Google Search
-grounding tool, excluding recipes the user already has saved.
+Finds real recipes from the web via Gemini's Google Search grounding,
+skipping anything the user already has saved.
 
-Deliberately does NOT combine this with structured output
-(response_schema): Gemini 3.6 Flash — this project's configured
-model — has a documented reliability issue where combining Google
-Search grounding with structured JSON output on longer prompts can
-return no text at all, or a TOO_MANY_TOOL_CALLS error. Instead,
-this returns plain grounded text (which the prompt asks to be
-formatted in clear sections) plus a verified list of real source
-URLs pulled from the response's grounding metadata — the citations
-are guaranteed real regardless of how well-formatted the text is.
+Not combined with structured output on purpose - Search grounding +
+structured JSON output is flaky on longer prompts with this model
+(sometimes just returns no text). So this gets plain text back
+instead, plus a list of real source URLs pulled straight from the
+response's grounding metadata, which stays accurate no matter how
+messy the text formatting is.
 """
 
 import os
@@ -30,17 +27,10 @@ from src.prompts.recipe_discovery_prompt import build_discovery_prompt
 from src.observability import setup_observability
 
 
-# Domains that turn up in Google Search results but rarely link to
-# an actually-readable recipe page — social/video platforms where
-# the content is typically behind a login wall or buried in a
-# video caption rather than a proper recipe page.
-#
-# Ideally this would be enforced via the Search tool's own
-# exclude_domains option, but that field is explicitly documented
-# as unsupported on the Gemini Developer API (API-key auth) — it
-# only works on Vertex AI. So it's enforced here in code instead,
-# as a deterministic backstop regardless of how well the model
-# follows the prompt's own guidance to avoid these sources.
+# Social/video sites that show up in search but rarely link to an
+# actually-readable recipe page. The Search tool has an
+# exclude_domains option, but it's not supported on API-key auth
+# (Vertex-only), so this is a manual blocklist instead.
 _EXCLUDED_SOURCE_DOMAINS = (
     "facebook.com",
     "instagram.com",
@@ -55,25 +45,8 @@ _EXCLUDED_SOURCE_DOMAINS = (
 
 
 def suggest_recipes_online(query: str, excluded_names: list[str]) -> dict:
-    """
-    Suggest ~3 real recipes from the web matching a natural-
-    language request, avoiding the user's already-saved recipes.
-
-    Args:
-        query: What the user is looking for, e.g. "easy recipes
-            with pasta and chicken".
-        excluded_names: Names of recipes the user already has
-            saved, so the model can actively avoid suggesting them.
-
-    Returns:
-        dict: {
-            "success": bool,
-            "error": str | None,
-            "response_text": str | None,
-            "sources": list[dict] | None,
-            # each source: {"title": str, "url": str, "domain": str}
-        }
-    """
+    """Suggest ~3 real recipes matching query, skipping anything in
+    excluded_names (the user's saved recipes)."""
 
     if not query or not query.strip():
         return _error("Please describe what kind of recipe you're looking for.")
@@ -136,18 +109,11 @@ def suggest_recipes_online(query: str, excluded_names: list[str]) -> dict:
 
 
 def _extract_sources(response) -> list:
-    """
-    Pull real, verified source URLs out of the response's grounding
-    metadata — but only the ones actually cited in the final answer.
-
-    grounding_chunks lists every page the model consulted during
-    search, which is often far more than what it actually used —
-    the model may run several searches and only cite a few results.
-    grounding_supports maps specific text segments in the response
-    to which chunk indices back them up, so filtering to only the
-    chunks referenced there gives just the sources genuinely behind
-    the 3 suggestions shown, not everything that was searched.
-    """
+    """Pull the actually-cited source URLs out of the grounding
+    metadata. grounding_chunks is every page the model looked at
+    (often way more than it used); grounding_supports says which
+    chunks back up which part of the answer, so we filter down to
+    just those."""
 
     sources = []
 
@@ -166,9 +132,8 @@ def _extract_sources(response) -> list:
             if support.grounding_chunk_indices:
                 cited_indices.update(support.grounding_chunk_indices)
 
-        # Fall back to showing everything only if the model didn't
-        # provide per-segment citations at all (rare, but possible) —
-        # better to show extra sources than none.
+        # No per-segment citations at all? Show everything instead
+        # of nothing.
         indices_to_show = cited_indices if cited_indices else range(len(chunks))
 
         for i in indices_to_show:

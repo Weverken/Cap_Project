@@ -5,12 +5,7 @@ from dotenv import load_dotenv
 
 
 def get_connection():
-    """
-    Create and return a connection to the Postgres database.
-
-    Requires DATABASE_URL to be set (e.g. a Supabase/Neon
-    connection string) — see .env.example.
-    """
+    """Open a connection to Postgres. Needs DATABASE_URL set (see .env.example)."""
 
     load_dotenv()
 
@@ -26,14 +21,8 @@ def get_connection():
 
 
 def execute(conn, query, params=None):
-    """
-    Run a query on a connection and return the cursor.
-
-    Small helper so calling code can keep the same
-    `cursor = execute(conn, "...", (...))` shape it used with
-    SQLite's conn.execute() shortcut, which psycopg2 doesn't have
-    (psycopg2 requires an explicit cursor object).
-    """
+    """Run a query, return the cursor. psycopg2 doesn't have SQLite's
+    conn.execute() shortcut, so this just fakes it."""
 
     cursor = conn.cursor()
     cursor.execute(query, params or ())

@@ -1,20 +1,13 @@
 """
-Agent-facing tool wrappers.
+Tool wrappers registered with Gemini.
 
-These are the functions actually registered with the Gemini
-client as tools. They exist because the Day 3 tools in
-src/tools/ operate on data (full recipe dicts, lists of recipes)
-that the LLM has no way to supply directly — it can only provide
-simple values like a recipe name or a list of ingredient strings.
+The model can only pass simple stuff (strings, numbers) into a tool
+call, not a full recipe dict. So each wrapper here takes the simple
+argument, looks up whatever it needs from the DB, and hands off to the
+real logic in src/tools/.
 
-Each wrapper here:
-1. Takes simple, LLM-supplyable arguments.
-2. Fetches whatever data it needs from the database.
-3. Delegates the actual logic to the corresponding Day 3 tool.
-
-The docstrings on these functions are used by the Gemini SDK to
-auto-generate the tool schema the model sees, so they double as
-the tool's user-facing description — keep them accurate.
+Heads up: these docstrings become the tool descriptions Gemini actually
+sees, so keep them accurate if you edit one.
 """
 
 from src.agent.context import get_current_user_id
@@ -34,7 +27,7 @@ from src.tools.search_recipes import search_recipes as _search_recipes
 
 
 def _find_recipe_by_name(name: str) -> dict | None:
-    """Case-insensitive lookup of a saved recipe by name."""
+    """Look up a saved recipe by name, case-insensitive."""
     recipes = get_all_recipes(get_current_user_id())
     name_lower = name.strip().lower()
 

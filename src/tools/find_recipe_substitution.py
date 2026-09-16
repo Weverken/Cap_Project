@@ -1,15 +1,8 @@
 """
-Tool: find_recipe_substitution
-
-Looks up a deterministic substitution for a small set of
-ratio-sensitive ingredients — ones where getting the substitution
-ratio wrong changes how the recipe actually turns out (leavening
-agents, eggs/buttermilk in baking, etc.).
-
-This is intentionally NOT a comprehensive substitution database.
-For ingredients not covered here, the tool returns found=False so
-the calling agent can fall back to its own general knowledge and
-present the answer as a suggestion rather than a tested ratio.
+Lookup table for ingredient substitutions - just the ones where the
+ratio actually matters (leavening agents, eggs/buttermilk in baking,
+etc). Not meant to be comprehensive. Anything not in here comes back
+as found=False, and the agent falls back to general knowledge for it.
 """
 
 
@@ -141,31 +134,10 @@ SUBSTITUTION_TABLE = {
 
 
 def find_recipe_substitution(ingredient: str) -> dict:
-    """
-    Look up a deterministic substitution for an ingredient.
-
-    Args:
-        ingredient (str): The ingredient to find a substitute for
-            (e.g. "buttermilk", "baking powder"). Case-insensitive,
-            leading/trailing whitespace is ignored.
-
-    Returns:
-        dict: {
-            "success": bool,          # False only on bad input
-            "error": str | None,
-            "ingredient": str,
-            "found": bool,            # True if a match was found
-            "substitutions": list[dict] | None,
-            # Each substitution dict: substitute, ratio, note
-        }
-
-    Note:
-        This tool only covers ingredients where the substitution
-        ratio meaningfully affects the outcome (leavening agents,
-        eggs/dairy in baking, etc.). If found=False, the calling
-        agent should answer from its own general knowledge and
-        present it as a suggestion rather than a tested ratio.
-    """
+    """Look up a substitution for an ingredient (case-insensitive).
+    found=False just means it's not in the table, not that no
+    substitute exists - the agent should still answer from general
+    knowledge in that case, just flag it as a suggestion, not a tested ratio."""
 
     if not isinstance(ingredient, str) or not ingredient.strip():
         return {

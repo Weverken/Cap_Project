@@ -1,13 +1,9 @@
 """
-Tool: search_recipes
+Thin, validated wrapper around src.database.recipes.search_recipes.
 
-Agent-facing wrapper around src.database.recipes.search_recipes.
-
-The database layer already implements the actual search logic
-(name/description matching, max cook time filter). This tool's
-job is to give the agent a clean, validated, error-safe interface
-to that logic — since the DB function itself will raise on bad
-input rather than returning a structured error.
+The DB function does the real search but just raises on bad input -
+this adds input validation and turns errors into a normal dict
+response, since the agent can't handle a raised exception.
 """
 
 from src.database.recipes import search_recipes as _db_search_recipes
@@ -18,27 +14,8 @@ def search_recipes(
     search_term: str | None = None,
     max_cook_time: int | None = None,
 ) -> dict:
-    """
-    Search a user's saved recipes by name/description, optionally
-    filtered by maximum cooking time.
-
-    Args:
-        user_id (int): The ID of the user whose recipes to search.
-        search_term (str | None): Text to match against recipe
-            name or description (case-insensitive substring
-            match). If None or empty, no text filter is applied.
-        max_cook_time (int | None): Only include recipes with
-            cook_time less than or equal to this value (minutes).
-            If None, no time filter is applied.
-
-    Returns:
-        dict: {
-            "success": bool,
-            "error": str | None,
-            "count": int | None,
-            "recipes": list[dict] | None,
-        }
-    """
+    """Search a user's recipes by name/description text, optionally
+    capped by max_cook_time (minutes). Either filter can be left out."""
 
     # ---- Input validation ----
 

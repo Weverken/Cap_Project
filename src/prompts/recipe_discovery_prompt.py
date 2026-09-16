@@ -1,21 +1,10 @@
-"""
-Prompt for suggesting recipes from the web via Google Search
-grounding, kept separate from the discovery logic per the
-project's centralized-prompts convention.
-"""
+"""Prompt for the web recipe search (src.discovery.recipe_finder)."""
 
 
 def build_discovery_prompt(query: str, excluded_names: list[str]) -> str:
-    """
-    Build the prompt for src.discovery.recipe_finder.
-
-    Takes the user's saved recipe names as an explicit exclusion
-    list so the model actively avoids suggesting recipes they
-    already have — this is an instruction to the model, not a
-    hard-coded filter, so it's a strong steer rather than a
-    guarantee; the model could still occasionally suggest
-    something very similar under a different name.
-    """
+    """Build the discovery prompt. excluded_names is just a strong
+    instruction to the model, not an enforced filter - it could still
+    slip up and suggest something too similar under a different name."""
 
     if excluded_names:
         excluded_section = (

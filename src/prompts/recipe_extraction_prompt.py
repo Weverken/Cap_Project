@@ -1,10 +1,5 @@
-"""
-Prompt used for AI recipe extraction from images.
-
-Kept separate from the extractor logic so it can be reviewed/
-tuned independently — same pattern as src/prompts/system_prompt.py
-for the chat agent.
-"""
+"""Prompt for extracting a recipe from an image. Same reasoning as
+system_prompt.py - separate file, easier to tune."""
 
 RECIPE_EXTRACTION_PROMPT = """\
 You are extracting a recipe from an image into structured data.

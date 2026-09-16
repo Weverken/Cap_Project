@@ -1,12 +1,7 @@
 """
-Tool: convert_measurement
-
-Converts a quantity from one unit of measurement to another,
-within the same category (volume-to-volume or weight-to-weight).
-
-Does NOT convert between volume and weight (e.g. cups to grams),
-since that requires ingredient-specific density data which is out
-of scope for this tool. See docstring below for rationale.
+Converts between units, but only within the same category (volume-to-
+volume or weight-to-weight). Won't do cups-to-grams - that needs
+ingredient density, which this doesn't know about.
 """
 
 
@@ -45,36 +40,11 @@ UNIT_ALIASES = {
 
 
 def convert_measurement(quantity: float, from_unit: str, to_unit: str) -> dict:
-    """
-    Convert a quantity from one unit to another within the same
-    category (volume or weight).
-
-    Args:
-        quantity (float): The numeric amount to convert. Must be
-            a non-negative number.
-        from_unit (str): The unit to convert from (e.g. "cup",
-            "tbsp", "g", "oz"). Case-insensitive, common plurals
-            and full words are accepted (see UNIT_ALIASES).
-        to_unit (str): The unit to convert to.
-
-    Returns:
-        dict: {
-            "success": bool,
-            "error": str | None,
-            "original_quantity": float,
-            "from_unit": str,
-            "converted_quantity": float | None,
-            "to_unit": str,
-        }
-
-    Note:
-        Conversions between volume and weight (e.g. cups -> grams)
-        are intentionally unsupported. That conversion depends on
-        ingredient density (flour, sugar, and butter all convert
-        differently), which this tool has no way to know. Calling
-        with mismatched categories returns a clear error instead
-        of a guessed/incorrect number.
-    """
+    """Convert quantity from from_unit to to_unit - same category only
+    (volume or weight). Units are case-insensitive and accept common
+    plurals/full words (see UNIT_ALIASES). Mismatched categories (e.g.
+    cups to grams) return an error rather than a guess, since that
+    actually depends on the ingredient's density."""
 
     # ---- Input validation ----
 

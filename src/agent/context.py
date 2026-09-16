@@ -1,19 +1,11 @@
 """
-Per-request "current user" context for agent tools.
+Keeps track of which user the current request belongs to.
 
-Agent tools are registered as plain Python functions (the Gemini
-SDK calls them directly via automatic function calling), so they
-have no natural way to know which user's request they're serving.
-
-A single module-level variable would NOT be safe here: Streamlit
-can run multiple people's sessions concurrently in the same
-Python process (each session's script reruns in its own thread),
-so a plain global could leak user A's id into user B's tool calls
-if their requests overlap in time.
-
-threading.local() gives each thread — and therefore each
-concurrent Streamlit session — its own isolated value, which is
-what we actually need.
+Agent tools are just plain functions, Gemini calls them directly, so
+they have no built-in idea of who's asking. Can't use a normal global
+either, since Streamlit can run several people's sessions in the same
+process at once, and a global would mix them up. threading.local() gives
+each session its own value instead.
 """
 
 import threading
@@ -24,20 +16,12 @@ _context = threading.local()
 
 
 def set_current_user_id(user_id: int) -> None:
-    """
-    Set the current user for this thread. Call this at the top of
-    every page, on every rerun, before any DB or agent-tool code
-    runs — Streamlit reuses threads across reruns, so this must be
-    set fresh each time rather than assumed to persist correctly.
-    """
+    """Call this at the top of every page (every rerun) before touching
+    the DB or agent tools - Streamlit reuses threads, so it won't
+    persist on its own."""
     _context.user_id = user_id
 
 
 def get_current_user_id() -> int:
-    """
-    Get the current user for this thread. Falls back to
-    DEFAULT_USER_ID if never set (e.g. running a script or test
-    outside the Streamlit app, or before auth is wired up on a
-    given page).
-    """
+    """Falls back to DEFAULT_USER_ID if nothing was set yet."""
     return getattr(_context, "user_id", DEFAULT_USER_ID)

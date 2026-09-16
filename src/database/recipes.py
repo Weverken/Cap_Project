@@ -273,9 +273,8 @@ def search_recipes(
     params = [user_id]
 
     if search_term:
-        # ILIKE for case-insensitive matching, matching SQLite's
-        # default case-insensitive LIKE behavior for ASCII text —
-        # Postgres's plain LIKE is case-sensitive.
+        # ILIKE = case-insensitive LIKE. Postgres's plain LIKE is
+        # case-sensitive, which isn't what we want here.
         query += """
             AND (
                 name ILIKE %s
